@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,19 +17,11 @@ export default function ContactSection() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.1 },
-    )
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true)
+    }, { threshold: 0.1 })
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current)
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current)
     return () => observer.disconnect()
   }, [])
 
@@ -41,19 +31,27 @@ export default function ContactSection() {
 
     const formData = new FormData(e.currentTarget)
     const data = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      message: formData.get("message"),
+      firstName: formData.get("firstName")?.toString().trim(),
+      lastName: formData.get("lastName")?.toString().trim(),
+      email: formData.get("email")?.toString().trim(),
+      phone: formData.get("phone")?.toString().trim() || "",
+      message: formData.get("message")?.toString().trim(),
+    }
+
+    // Basic client-side validation for required fields
+    if (!data.firstName || !data.lastName || !data.email || !data.message) {
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
     }
 
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
 
@@ -61,13 +59,13 @@ export default function ContactSection() {
         setIsSuccess(true)
         toast({
           title: "Message sent successfully!",
-          description: "I'll get back to you as soon as possible.",
+          description: "You’ll get a confirmation email shortly.",
         })
-        ;(e.target as HTMLFormElement).reset()
-
+        e.currentTarget.reset()
         setTimeout(() => setIsSuccess(false), 3000)
       } else {
-        throw new Error("Failed to send message")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to send message")
       }
     } catch (error) {
       toast({
@@ -92,11 +90,7 @@ export default function ContactSection() {
           Have a project in mind? Let&apos;s work together!
         </p>
 
-        <Card
-          className={`border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl ${
-            isVisible ? "animate-fade-in-up" : "opacity-0"
-          }`}
-        >
+        <Card className={`border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
           <CardHeader>
             <CardTitle className="text-2xl font-bold flex items-center gap-2 font-[family-name:var(--font-montserrat)]">
               <Mail className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -107,73 +101,28 @@ export default function ContactSection() {
             <form onSubmit={handleSubmit} className="space-y-6" aria-label="Contact Form">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">
-                    First Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    placeholder="John"
-                    required
-                    className="bg-input border-border focus:border-primary transition-colors"
-                    aria-required="true"
-                  />
+                  <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
+                  <Input id="firstName" name="firstName" placeholder="John" required className="bg-input border-border focus:border-primary transition-colors" />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">
-                    Last Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    placeholder="Doe"
-                    required
-                    className="bg-input border-border focus:border-primary transition-colors"
-                    aria-required="true"
-                  />
+                  <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
+                  <Input id="lastName" name="lastName" placeholder="Doe" required className="bg-input border-border focus:border-primary transition-colors" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">
-                  Email <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="john.doe@example.com"
-                  required
-                  className="bg-input border-border focus:border-primary transition-colors"
-                  aria-required="true"
-                />
+                <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+                <Input id="email" name="email" type="email" placeholder="john.doe@example.com" required className="bg-input border-border focus:border-primary transition-colors" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  className="bg-input border-border focus:border-primary transition-colors"
-                />
+                <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 123-4567" className="bg-input border-border focus:border-primary transition-colors" />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message">
-                  Message <span className="text-destructive">*</span>
-                </Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Tell me about your project..."
-                  required
-                  rows={6}
-                  className="bg-input border-border focus:border-primary transition-colors resize-none"
-                  aria-required="true"
-                />
+                <Label htmlFor="message">Message <span className="text-destructive">*</span></Label>
+                <Textarea id="message" name="message" placeholder="Tell me about your project..." required rows={6} className="bg-input border-border focus:border-primary transition-colors resize-none" />
               </div>
 
               <Button
@@ -181,21 +130,19 @@ export default function ContactSection() {
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                 disabled={isSubmitting || isSuccess}
+                aria-busy={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
-                    Sending...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending...
                   </>
                 ) : isSuccess ? (
                   <>
-                    <CheckCircle2 className="mr-2 h-5 w-5" aria-hidden="true" />
-                    Message Sent!
+                    <CheckCircle2 className="mr-2 h-5 w-5" /> Message Sent!
                   </>
                 ) : (
                   <>
-                    <Send className="mr-2 h-5 w-5" aria-hidden="true" />
-                    Send Message
+                    <Send className="mr-2 h-5 w-5" /> Send Message
                   </>
                 )}
               </Button>
